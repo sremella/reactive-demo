@@ -1,5 +1,6 @@
 package com.kubra.reactivedemo.person;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @RestController
 public class PersonController {
@@ -16,7 +18,7 @@ public class PersonController {
 
   static {
     personFlux = Flux
-        .zip(Flux.range(1, 6), Flux.just("John", "Jame", "Max", "Alex", "Aloy", "Sarah"))
+        .zip(Flux.range(1, 6), Flux.just("John", "Jane", "Max", "Alex", "Aloy", "Sarah"))
         .map(t -> new Person(t.getT1(), t.getT2()));
 
     personFlux
@@ -26,13 +28,13 @@ public class PersonController {
 
   @SuppressWarnings("OptionalGetWithoutIsPresent")
   @GetMapping("/persons/{id}")
-  public Person getPerson(@PathVariable int id, @RequestParam(defaultValue = "2", required = false) int delay)
-      throws InterruptedException {
-    Thread.sleep(delay * 1000);
-    return personList.stream()
+  public Mono<Person> getPerson(@PathVariable int id,
+      @RequestParam(defaultValue = "1", required = false) int delay) {
+
+    return personFlux
         .filter(p -> p.getId() == id)
-        .findFirst()
-        .get();
+        .delayElements(Duration.ofSeconds(delay))
+        .next();
   }
 
   @GetMapping("/persons")
