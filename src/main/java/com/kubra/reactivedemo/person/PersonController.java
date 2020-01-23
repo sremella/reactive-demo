@@ -1,8 +1,7 @@
 package com.kubra.reactivedemo.person;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,19 +13,13 @@ import reactor.core.publisher.Mono;
 public class PersonController {
 
   private static Flux<Person> personFlux;
-  private static final List<Person> personList = new ArrayList<>();
 
   static {
     personFlux = Flux
         .zip(Flux.range(1, 6), Flux.just("John", "Jane", "Max", "Alex", "Aloy", "Sarah"))
         .map(t -> new Person(t.getT1(), t.getT2()));
-
-    personFlux
-        .doOnNext(personList::add)
-        .subscribe();
   }
 
-  @SuppressWarnings("OptionalGetWithoutIsPresent")
   @GetMapping("/persons/{id}")
   public Mono<Person> getPerson(@PathVariable int id,
       @RequestParam(defaultValue = "1", required = false) int delay) {
@@ -37,8 +30,8 @@ public class PersonController {
         .next();
   }
 
-  @GetMapping("/persons")
-  public Flux<Person> persons() {
-    return personFlux;
+  @GetMapping(value = "/persons", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public Flux<Person> persons(@RequestParam(defaultValue = "1", required = false) int delay) {
+    return personFlux.delayElements(Duration.ofSeconds(delay));
   }
 }
